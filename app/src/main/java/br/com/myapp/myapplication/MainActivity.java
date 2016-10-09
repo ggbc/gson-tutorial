@@ -2,6 +2,7 @@ package br.com.myapp.myapplication;
 
 import android.os.Bundle;
 import android.support.design.widget.NavigationView;
+import android.support.test.espresso.core.deps.guava.collect.Lists;
 import android.support.v4.view.GravityCompat;
 import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.ActionBarDrawerToggle;
@@ -18,9 +19,16 @@ import com.android.volley.Request;
 import com.android.volley.RequestQueue;
 import com.android.volley.Response;
 import com.android.volley.VolleyError;
-import com.android.volley.toolbox.StringRequest;
+import com.android.volley.toolbox.JsonObjectRequest;
 import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
+import com.google.gson.reflect.TypeToken;
+
+import org.json.JSONObject;
+
+import java.lang.reflect.Type;
+import java.util.Collection;
+
+import br.com.myapp.myapplication.business.Atleta;
 
 public class MainActivity extends AppCompatActivity
         implements NavigationView.OnNavigationItemSelectedListener {
@@ -33,15 +41,6 @@ public class MainActivity extends AppCompatActivity
         setContentView(R.layout.activity_main);
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
-
-//        FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
-//        fab.setOnClickListener(new View.OnClickListener() {
-//            @Override
-//            public void onClick(View view) {
-//                Snackbar.make(view, "Replace with your own action", Snackbar.LENGTH_LONG)
-//                        .setAction("Action", null).show();
-//            }
-//        });
 
         DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
         ActionBarDrawerToggle toggle = new ActionBarDrawerToggle(
@@ -103,39 +102,53 @@ public class MainActivity extends AppCompatActivity
             loginWebView.loadUrl("https://api.cartolafc.globo.com/partidas");
         } else if (id == R.id.nav_gallery) {
 
+
+            Gson gson = new Gson();
+            Collection<Integer> ints = Lists.newArrayList(36856, 36940, 36943, 37281, 37604);
+
+// Serialization
+            String json = gson.toJson(ints);  // ==> json is [1,2,3,4,5]
+
+// Deserialization
+            Type collectionType = new TypeToken<Collection<Integer>>(){}.getType();
+            Collection<Integer> ints2 = gson.fromJson(json, collectionType);
+// ==> ints2 is same as ints
+            final TextView mTextView = (TextView) findViewById(R.id.text);
+            mTextView.setText(ints2.toString());
+
+
         } else if (id == R.id.nav_slideshow) {
 
         } else if (id == R.id.nav_manage) {
+            final TextView mTextView = (TextView) findViewById(R.id.text);
+            String url = "https://api.cartolafc.globo.com/mercado/status";
+
+            JsonObjectRequest jsObjRequest = new JsonObjectRequest
+                    (Request.Method.GET, url, null, new Response.Listener<JSONObject>() {
+
+                        @Override
+                        public void onResponse(JSONObject response) {
+//                            mTextView.setText("JSONObject: " + response.keys().toString());
+                            mTextView.setText("JSONObject: " + response.toString());
+                        }
+                    }, new Response.ErrorListener() {
+
+                        @Override
+                        public void onErrorResponse(VolleyError error) {
+                            // TODO Auto-generated method stub
+
+                        }
+                    });
+            RequestQueueSingleton.getInstance(this).addToRequestQueue(jsObjRequest);
 
         } else if (id == R.id.nav_share) {
 
         } else if (id == R.id.nav_parciais) {
             final TextView mTextView = (TextView) findViewById(R.id.text);
-            ExpandableListView mLisView = (ExpandableListView) findViewById(R.id.parciais);
 
-            RequestQueue queue = RequestQueueSingleton.getInstance(this.getApplicationContext()).
-                    getRequestQueue();
-//            String url = "https://api.cartolafc.globo.com/atletas/pontuados";
-            String url = "https://api.cartolafc.globo.com/mercado/status";
+            String url = "https://api.cartolafc.globo.com/atletas/pontuados";
+//            String url = "https://api.cartolafc.globo.com/mercado/status";
 
-//            // Request a string response from the provided URL.
-//            StringRequest stringRequest = new StringRequest(Request.Method.GET, url,
-//                    new Response.Listener<String>() {
-//                        @Override
-//                        public void onResponse(String response) {
-//                            // Display the first 500 characters of the response string.
-//                            mTextView.setText("Response is: " + response.substring(0, 500));
-//                        }
-//                    }, new Response.ErrorListener() {
-//                @Override
-//                public void onErrorResponse(VolleyError error) {
-//                    mTextView.setText("That didn't work!");
-//                }
-//            });
-
-
-            //GsonRequest(String url, Class<T> clazz, Map<String, String> headers,
-//            Listener<T> listener, ErrorListener errorListener)
             GsonRequest gsonRequest = new GsonRequest(url, Atleta.class, null,
                     new Response.Listener<Atleta>() {
                         @Override
@@ -152,7 +165,6 @@ public class MainActivity extends AppCompatActivity
 
 
             // Add a request (in this example, called stringRequest) to your RequestQueue.
-//            RequestQueueSingleton.getInstance(this).addToRequestQueue(stringRequest);
             RequestQueueSingleton.getInstance(this).addToRequestQueue(gsonRequest);
         }
 
